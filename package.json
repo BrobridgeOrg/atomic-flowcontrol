@@ -1,0 +1,32 @@
+{
+  "name": "@brobridge/atomic-flowcontrol",
+  "version": "0.0.1",
+  "homepage": "https://github.com/BrobridgeOrg/atomic-flowcontrol#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/BrobridgeOrg/atomic-flowcontrol.git"
+  },
+  "bugs": {
+    "url": "https://github.com/BrobridgeOrg/atomic-flowcontrol/issues"
+  },
+  "description": "Flow Control Module for Brobridge Atomic",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "flowcontrol",
+    "node-red",
+    "atomic"
+  ],
+  "author": "Fred Chien <fred@brobridge.com>",
+  "license": "APL",
+  "node-red": {
+    "version": ">=2.0.0",
+    "nodes": {
+      "flowcontrol-control": "control.js"
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
