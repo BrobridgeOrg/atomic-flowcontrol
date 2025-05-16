@@ -52,34 +52,41 @@ module.exports = function(RED) {
         return null;
       }
 
-      // Check if the sessionId is valid for the target node
-      let session = targetNode.sessions[sessionId];
-      if (!session) {
+      // Check if the target node is a controllable node
+      if (!targetNode.atomic) {
+        node.error('target node is not controllable');
+        return null;
+      }
+
+      let sm = targetNode.atomic.getModule('SessionManager');
+      if (!sm) {
+        node.error('target node is not controllable');
         return null;
       }
 
       // Perform action based on the node's action property
+      let err = null;
       switch(action) {
-        case 'continue':
-          // call function to continue
-          if (typeof targetNode.next !== 'function') {
-            node.error('target node is not controllable');
-            break;
-          }
+      case 'continue':
 
-          targetNode.next(sessionId);
+        err = sm.resumeSession(sessionId);
+        if (err) {
+          node.error(err);
           break;
-        case 'break':
-          // call function to close session
-          if (typeof targetNode.close === 'function') {
-            node.error('target node is not controllable');
-            break;
-          }
+        }
 
-          targetNode.close(sessionId);
+        break;
+      case 'break':
+
+        err = sm.closeSession(sessionId);
+        if (err) {
+          node.error(err);
           break;
-        default:
-          node.error(`Unknown action ${node.action}`, msg);
+        }
+
+        break;
+      default:
+        node.error(`Unknown action ${node.action}`, msg);
       }
     }
   }
