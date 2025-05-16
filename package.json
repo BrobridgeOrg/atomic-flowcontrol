@@ -27,9 +27,12 @@
     },
     "disabledNodes": {
       "flowcontrol-testsource": "test_source.js"
-	}
+    }
   },
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@brobridge/atomic-sdk": "^0.0.1"
   }
 }
