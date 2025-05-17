@@ -1,4 +1,4 @@
-const atomicSDK = require('atomic-sdk');
+const atomicSDK = require('@brobridge/atomic-sdk');
 
 module.exports = function(RED) {
 
