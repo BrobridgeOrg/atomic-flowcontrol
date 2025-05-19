@@ -68,22 +68,14 @@ module.exports = function(RED) {
       let err = null;
       switch(action) {
       case 'continue':
-
-        err = sm.resumeSession(sessionId);
+        sm.resumeSession(sessionId);
         if (err) {
-          node.error(err);
           break;
         }
 
         break;
       case 'break':
-
-        err = sm.closeSession(sessionId);
-        if (err) {
-          node.error(err);
-          break;
-        }
-
+        sm.closeSession(sessionId);
         break;
       default:
         node.error(`Unknown action ${node.action}`, msg);
