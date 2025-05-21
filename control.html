@@ -1,190 +1,195 @@
 <script type="text/javascript">
-    RED.nodes.registerType('Flow Control', {
-        category: 'function',
-        color: '#225588',
-        defaults: {
-            name: { value: "" },
-            targetNodeId: { value: "" },
-            selectMode: { value: "auto" },
-            selectedNodes: { value: [] },
-            action: { value: "continue" },
-        },
-        inputs: 1,
-        outputs: 0,
-        icon: 'font-awesome/fa-fast-forward',
-        label: function () {
-            return this.name || "Flow Control";
-        },
-        oneditprepare: function () {
-            let node = this;
+  RED.nodes.registerType('Flow Control', {
+    category: 'function',
+    color: '#225588',
+    defaults: {
+      name: { value: "" },
+      targetNodeId: { value: "" },
+      selectMode: { value: "auto" },
+      selectedNodes: { value: [] },
+      action: { value: "continue" },
+    },
+    inputs: 1,
+    outputs: 0,
+    icon: 'font-awesome/fa-fast-forward',
+    label: function () {
+      return this.name || "Flow Control";
+    },
+    oneditprepare: function () {
+      let node = this;
 
-            var scope = node.selectedNodes || [];
-            this._resize = function () {
-                var rows = $("#dialog-form>div:not(.node-input-target-list-row)");
-                var height = $("#dialog-form").height();
-                for (var i = 0; i < rows.length; i++) {
-                    height -= $(rows[i]).outerHeight(true);
-                }
-                var editorRow = $("#dialog-form>div.node-input-target-list-row");
-                editorRow.css("height", height + "px");
-            };
-            var search = $("#node-input-status-target-filter").searchBox({
-                style: "compact",
-                delay: 300,
-                change: function () {
-                    var val = $(this).val().trim().toLowerCase();
-                    if (val === "") {
-                        dirList.treeList("filter", null);
-                        search.searchBox("count", "");
-                    } else {
-                        var count = dirList.treeList("filter", function (item) {
-                            return item.label.toLowerCase().indexOf(val) > -1 || item.node.type.toLowerCase().indexOf(val) > -1
-                        });
-                        search.searchBox("count", count + " / " + candidateNodes.length);
-                    }
-                }
-            });
+      // Getting available nodes
+      let resp = $.ajax({
+        dataType: 'json',
+        cache: false,
+        url: '/nodes/@brobridge/atomic-flowcontrol/apis/controllableNodes',
+        async: false
+      });
 
-            var dirList = $("#node-input-status-target-container-div").css({ width: "100%", height: "100%" })
-                .treeList({ multi: true }).on("treelistitemmouseover", function (e, item) {
-                    item.node.highlighted = true;
-                    item.node.dirty = true;
-                    RED.view.redraw();
-                }).on("treelistitemmouseout", function (e, item) {
-                    item.node.highlighted = false;
-                    item.node.dirty = true;
-                    RED.view.redraw();
-                })
-            var candidateNodes = RED.nodes.filterNodes({ z: node.z }).filter(function (n) {
-                if (n.type === "subflow") {
-                    return false;
-                }
-                if (n.type === "Flow Control") {
-                    return false;
-                }
-                if (n.hasOwnProperty("flowControllable") && n.flowControllable == undefined) {
-                  n.flowControllable = true;
-                }
-                if (n.flowControllable && n.id !== node.id) {
-                    return true;
-                }
-                return false;
-            });
-            var allChecked = true;
-            var items = [];
-            var nodeItemMap = {};
+      let candidateNodeIDs = resp.responseJSON;
 
-            candidateNodes.forEach(function (n) {
-                if (n.id === node.id) {
-                    return;
-                }
-                var isChecked = scope.indexOf(n.id) !== -1;
-
-                allChecked = allChecked && isChecked;
-
-                var nodeDef = RED.nodes.getType(n.type);
-                var label;
-                var sublabel;
-                if (nodeDef) {
-                    var l = nodeDef.label;
-                    label = (typeof l === "function" ? l.call(n) : l) || "";
-                    sublabel = n.type;
-                    if (sublabel.indexOf("subflow:") === 0) {
-                        var subflowId = sublabel.substring(8);
-                        var subflow = RED.nodes.subflow(subflowId);
-                        sublabel = "subflow : " + subflow.name;
-                    }
-                }
-                if (!nodeDef || !label) {
-                    label = n.type;
-                }
-                nodeItemMap[n.id] = {
-                    node: n,
-                    label: label,
-                    sublabel: sublabel,
-                    selected: isChecked,
-                    checkbox: true
-                };
-                items.push(nodeItemMap[n.id]);
-            });
-            dirList.treeList('data', items);
-
-            $("#node-input-targetNodes-select").on("click", function (e) {
-                e.preventDefault();
-                var preselected = dirList.treeList('selected').map(function (n) { return n.node.id });
-                RED.tray.hide();
-                RED.view.selectNodes({
-                    selected: preselected,
-                    onselect: function (selection) {
-                        RED.tray.show();
-                        var newlySelected = {};
-                        selection.forEach(function (n) {
-                            newlySelected[n.id] = true;
-                            if (nodeItemMap[n.id]) {
-                                nodeItemMap[n.id].treeList.select(true);
-                            }
-                        })
-                        preselected.forEach(function (id) {
-                            if (!newlySelected[id]) {
-                                nodeItemMap[id].treeList.select(false);
-                            }
-                        })
-                    },
-                    oncancel: function () {
-                        RED.tray.show();
-                    },
-                    filter: function (n) {
-                      console.log(n)
-
-                        if (n.hasOwnProperty("flowControllable") && n.flowControllable == undefined) {
-                          n.flowControllable = true;
-                        }
-
-                        if (n.flowControllable && n.id !== node.id) {
-                            return true;
-                        }
-
-                        return false;
-                    }
-                });
-            });
-
-            $("#node-input-selectMode").on("change", function (e) {
-                var selectMode = $(this).val();
-                if (selectMode === "specific") {
-                    $(".node-input-target-row").show();
-                } else {
-                    $(".node-input-target-row").hide();
-                }
-                node._resize();
-            });
-
-            switch (this.selectMode) {
-                case 'specific':
-                    $("#node-input-selectMode").val("specific");
-                    break;
-                default:
-                    $("#node-input-selectMode").val("auto");
-            }
-
-            $("#node-input-selectMode").trigger("change");
-        },
-        oneditsave: function () {
-            var selectMode = $("#node-input-selectMode").val();
-            switch (selectMode) {
-                case 'specific':
-                    this.selectedNodes = $("#node-input-status-target-container-div").treeList('selected').map(function (i) {
-                        return i.node.id;
-                    })
-                    break;
-                default:
-                    this.selectedNodes = [];
-            }
-        },
-        oneditresize: function (size) {
-            this._resize();
+      var scope = node.selectedNodes || [];
+      this._resize = function () {
+        var rows = $("#dialog-form>div:not(.node-input-target-list-row)");
+        var height = $("#dialog-form").height();
+        for (var i = 0; i < rows.length; i++) {
+          height -= $(rows[i]).outerHeight(true);
         }
-    });
+        var editorRow = $("#dialog-form>div.node-input-target-list-row");
+        editorRow.css("height", height + "px");
+      };
+      var search = $("#node-input-status-target-filter").searchBox({
+        style: "compact",
+        delay: 300,
+        change: function () {
+          var val = $(this).val().trim().toLowerCase();
+          if (val === "") {
+            dirList.treeList("filter", null);
+            search.searchBox("count", "");
+          } else {
+            var count = dirList.treeList("filter", function (item) {
+              return item.label.toLowerCase().indexOf(val) > -1 || item.node.type.toLowerCase().indexOf(val) > -1
+            });
+            search.searchBox("count", count + " / " + candidateNodes.length);
+          }
+        }
+      });
+
+      var dirList = $("#node-input-status-target-container-div").css({ width: "100%", height: "100%" })
+        .treeList({ multi: true }).on("treelistitemmouseover", function (e, item) {
+          item.node.highlighted = true;
+          item.node.dirty = true;
+          RED.view.redraw();
+        }).on("treelistitemmouseout", function (e, item) {
+          item.node.highlighted = false;
+          item.node.dirty = true;
+          RED.view.redraw();
+        })
+
+
+      var candidateNodes = RED.nodes.filterNodes({}).filter(function (n) {
+        if (candidateNodeIDs.includes(n.id)) {
+          return true;
+        }
+        return false;
+      });
+
+      var allChecked = true;
+      var items = [];
+      var nodeItemMap = {};
+
+      candidateNodes.forEach(function (n) {
+        if (n.id === node.id) {
+          return;
+        }
+        var isChecked = scope.indexOf(n.id) !== -1;
+
+        allChecked = allChecked && isChecked;
+
+        var nodeDef = RED.nodes.getType(n.type);
+        var label;
+        var sublabel;
+        if (nodeDef) {
+          var l = nodeDef.label;
+          label = (typeof l === "function" ? l.call(n) : l) || "";
+          sublabel = n.type;
+          if (sublabel.indexOf("subflow:") === 0) {
+            var subflowId = sublabel.substring(8);
+            var subflow = RED.nodes.subflow(subflowId);
+            sublabel = "subflow : " + subflow.name;
+          }
+        }
+        if (!nodeDef || !label) {
+          label = n.type;
+        }
+        nodeItemMap[n.id] = {
+          node: n,
+          label: label,
+          sublabel: sublabel,
+          selected: isChecked,
+          checkbox: true
+        };
+        items.push(nodeItemMap[n.id]);
+      });
+
+      dirList.treeList('data', items);
+
+      $("#node-input-targetNodes-select").on("click", function (e) {
+        e.preventDefault();
+        var preselected = dirList.treeList('selected').map(function (n) { return n.node.id });
+        RED.tray.hide();
+        RED.view.selectNodes({
+          selected: preselected,
+          onselect: function (selection) {
+            RED.tray.show();
+            var newlySelected = {};
+            selection.forEach(function (n) {
+              newlySelected[n.id] = true;
+              if (nodeItemMap[n.id]) {
+                nodeItemMap[n.id].treeList.select(true);
+              }
+            })
+            preselected.forEach(function (id) {
+              if (!newlySelected[id]) {
+                nodeItemMap[id].treeList.select(false);
+              }
+            })
+          },
+          oncancel: function () {
+            RED.tray.show();
+          },
+          filter: function (n) {
+            console.log(n)
+
+            if (n.hasOwnProperty("flowControllable") && n.flowControllable == undefined) {
+              n.flowControllable = true;
+            }
+
+            if (n.flowControllable && n.id !== node.id) {
+              return true;
+            }
+
+            return false;
+          }
+        });
+      });
+
+      $("#node-input-selectMode").on("change", function (e) {
+        var selectMode = $(this).val();
+        if (selectMode === "specific") {
+          $(".node-input-target-row").show();
+        } else {
+          $(".node-input-target-row").hide();
+        }
+        node._resize();
+      });
+
+      switch (this.selectMode) {
+        case 'specific':
+          $("#node-input-selectMode").val("specific");
+          break;
+        default:
+          $("#node-input-selectMode").val("auto");
+      }
+
+      $("#node-input-selectMode").trigger("change");
+    },
+    oneditsave: function () {
+      var selectMode = $("#node-input-selectMode").val();
+      switch (selectMode) {
+        case 'specific':
+          this.selectedNodes = $("#node-input-status-target-container-div").treeList('selected').map(function (i) {
+            return i.node.id;
+          })
+          break;
+        default:
+          this.selectedNodes = [];
+      }
+    },
+    oneditresize: function (size) {
+      this._resize();
+    }
+  });
 </script>
 
 <script type="text/x-red" data-template-name="Flow Control">

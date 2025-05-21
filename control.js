@@ -83,5 +83,9 @@ module.exports = function(RED) {
     }
   }
 
+  // Admin APIs
+  const api = require('./apis');
+  api.init(RED);
+
   RED.nodes.registerType('Flow Control', ControlNode);
 }
