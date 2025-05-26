@@ -1,6 +1,6 @@
 {
   "name": "@brobridge/atomic-flowcontrol",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "homepage": "https://github.com/BrobridgeOrg/atomic-flowcontrol#readme",
   "repository": {
     "type": "git",
@@ -33,6 +33,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@brobridge/atomic-sdk": "^0.0.2"
+    "@brobridge/atomic-sdk": "^0.0.3"
   }
 }
