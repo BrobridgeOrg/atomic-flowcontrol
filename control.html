@@ -13,7 +13,24 @@
     outputs: 0,
     icon: 'font-awesome/fa-fast-forward',
     label: function () {
-      return this.name || "Flow Control";
+
+      let label = this.name;
+
+      if (!label) {
+        switch(this.action) {
+        case 'continue':
+            label = 'Continue';
+          break;
+
+        case 'break':
+            label = 'Break';
+          break;
+        default:
+            label = 'Flow Control';
+        }
+      }
+
+      return label;
     },
     oneditprepare: function () {
       let node = this;
