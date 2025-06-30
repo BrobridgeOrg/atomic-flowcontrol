@@ -35,11 +35,21 @@
     oneditprepare: function () {
       let node = this;
 
+      let headers = {}
+
+      // Getting token information from local storage
+      let authInfo = localStorage.getItem('auth-tokens');
+      if (authInfo != null) {
+        let tokenInfo = JSON.parse(localStorage.getItem('auth-tokens'));
+        headers.Authorization = 'Bearer ' + tokenInfo.access_token;
+      }
+
       // Getting available nodes
       let resp = $.ajax({
         dataType: 'json',
         cache: false,
         url: '/nodes/@brobridge/atomic-flowcontrol/apis/controllableNodes',
+        headers: headers,
         async: false
       });
 
@@ -82,7 +92,6 @@
           item.node.dirty = true;
           RED.view.redraw();
         })
-
 
       var candidateNodes = RED.nodes.filterNodes({}).filter(function (n) {
         if (candidateNodeIDs.includes(n.id)) {
